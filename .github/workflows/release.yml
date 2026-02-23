@@ -1,0 +1,56 @@
+# Déclenché sur push vers une branche release/x.y.z
+# Extrait la version depuis le nom de la branche, construit l'image Docker,
+# la pousse vers le GitHub Container Registry (ghcr.io), puis crée un Git tag.
+#
+# Convention de nommage obligatoire : release/1.0.0, release/2.1.3, etc.
+
+name: Release – Docker build & push
+
+on:
+  push:
+    branches:
+      - "release/**"
+
+jobs:
+  docker:
+    name: Build & push Docker image
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from branch name
+        id: version
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          VERSION="${BRANCH#release/}"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version détectée : $VERSION"
+
+      - name: Log into GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ github.repository }}:latest
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version.outputs.VERSION }}"
+          git push origin "v${{ steps.version.outputs.VERSION }}"
