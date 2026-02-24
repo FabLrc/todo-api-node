@@ -37,10 +37,5 @@
   "devDependencies": {
     "jest": "^29.7.0",
     "supertest": "^7.2.2"
-  },
-  
-  "overrides": {
-  "minimatch": "^10.2.1",
-  "glob": "^11.0.0"
-}
+  }
 }
