@@ -54,3 +54,17 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "v${{ steps.version.outputs.VERSION }}"
           git push origin "v${{ steps.version.outputs.VERSION }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.version.outputs.VERSION }}" \
+            --title "Release v${{ steps.version.outputs.VERSION }}" \
+            --notes "## Release v${{ steps.version.outputs.VERSION }}
+
+          Image Docker disponible :
+          \`\`\`
+          docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+          \`\`\`" \
+            --latest
