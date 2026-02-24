@@ -29,7 +29,9 @@ jobs:
         run: |
           BRANCH="${{ github.ref_name }}"
           VERSION="${BRANCH#release/}"
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "REPO_LOWER=$REPO_LOWER" >> $GITHUB_OUTPUT
           echo "Version détectée : $VERSION"
 
       - name: Log into GitHub Container Registry
@@ -45,12 +47,36 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:latest
 
-      - name: Create Git tag
+      - name: Create or update Git tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ steps.version.outputs.VERSION }}"
-          git push origin "v${{ steps.version.outputs.VERSION }}"
+          git tag -f "v${{ steps.version.outputs.VERSION }}"
+          git push origin "v${{ steps.version.outputs.VERSION }}" --force
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ steps.version.outputs.VERSION }}"
+          NOTES="## Release $TAG
+
+          Image Docker disponible :
+          \`\`\`
+          docker pull ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}
+          \`\`\`"
+
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --title "Release $TAG" \
+              --notes "$NOTES" \
+              --latest
+          else
+            gh release create "$TAG" \
+              --title "Release $TAG" \
+              --notes "$NOTES" \
+              --latest
+          fi
