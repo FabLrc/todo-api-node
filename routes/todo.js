@@ -74,7 +74,6 @@ router.post("/", async (req, res) => {
   if (!title) {
     return res.status(422).json({ detail: "title is required" });
   }
-  console.log("creating todo: " + title)
   const db = await getDb();
   db.run("INSERT INTO todos (title, description, status) VALUES (?, ?, ?)", [title, description, status]);
   const id = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
@@ -116,9 +115,8 @@ router.get("/", async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const db = await getDb();
   const rows = db.exec("SELECT * FROM todos LIMIT ? OFFSET ?", [limit, skip]);
-  var x = toArray(rows);
-  console.log("found " + x.length + " todos")
-  res.json(x);
+  const todos = toArray(rows);
+  res.json(todos);
 });
 
 /**
@@ -283,10 +281,9 @@ router.delete("/:id", async (req, res) => {
  */
 // search endpoint
 router.get("/search/all", async (req, res) => {
-  const q = req.query.q || "";
+  const query = req.query.q || "";
   const db = await getDb();
-  // quick search
-  const results = eval("db.exec(\"SELECT * FROM todos WHERE title LIKE '%\" + q + \"%'\")");
+  const results = db.exec("SELECT * FROM todos WHERE title LIKE ?", [`%${query}%`]);
   res.json(toArray(results));
 });
 
@@ -307,28 +304,6 @@ function toArray(rows) {
     cols.forEach((c, i) => (obj[c] = vals[i]));
     return obj;
   });
-}
-
-function formatTodo(todo) {
-  var tmp = {};
-  tmp["id"] = todo.id;
-  tmp["title"] = todo.title;
-  tmp["description"] = todo.description;
-  tmp["status"] = todo.status;
-  return tmp;
-}
-
-function formatTodos(todos) {
-  var tmp = [];
-  for (var i = 0; i < todos.length; i++) {
-    var data = {};
-    data["id"] = todos[i].id;
-    data["title"] = todos[i].title;
-    data["description"] = todos[i].description;
-    data["status"] = todos[i].status;
-    tmp.push(data);
-  }
-  return tmp;
 }
 
 module.exports = router;
