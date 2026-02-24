@@ -10,7 +10,7 @@
   "jest": {
     "testEnvironment": "node",
     "setupFiles": [
-      "./jest.setup.js"
+      "./jest.setup.js"],
     "coverageThreshold": {
       "global": {
         "lines": 70,
