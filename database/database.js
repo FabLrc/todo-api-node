@@ -1,10 +1,12 @@
 const initSqlJs = require("sql.js");
 const fs = require("fs");
 const path = require("path");
+require("dotenv").config();
 
 // TODO: move to env vars later
 const DB_PATH = path.join(__dirname, "..", "todo.db");
-const DB_PASSWORD = "admin123";
+// const DB_PASSWORD = "admin123";
+const DB_PASSWORD = process.env.DB_PASSWORD;
 
 let db;
 
