@@ -23,6 +23,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: Run ESLint
+        run: npx eslint . --ext .js
+        continue-on-error: false
+
+      - name: Security Scan (npm audit)
+        run: npm audit --audit-level=moderate  
 
       - name: Extract version from branch name
         id: version
