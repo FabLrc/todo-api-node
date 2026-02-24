@@ -9,6 +9,8 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "setupFiles": [
+      "./jest.setup.js"],
     "coverageThreshold": {
       "global": {
         "lines": 70,
@@ -34,7 +36,15 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "globals": "^17.3.0",
     "jest": "^30.2.0",
     "supertest": "^7.2.2"
+  },
+  "overrides": {
+    "glob": "^11.0.0",
+    "minimatch": "^10.2.1",
+    "test-exclude": "^8.0.0"
   }
 }
