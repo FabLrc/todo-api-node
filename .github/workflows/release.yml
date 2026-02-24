@@ -29,7 +29,9 @@ jobs:
         run: |
           BRANCH="${{ github.ref_name }}"
           VERSION="${BRANCH#release/}"
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "REPO_LOWER=$REPO_LOWER" >> $GITHUB_OUTPUT
           echo "Version détectée : $VERSION"
 
       - name: Log into GitHub Container Registry
@@ -45,8 +47,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:latest
 
       - name: Create or update Git tag
         run: |
@@ -64,7 +66,7 @@ jobs:
 
           Image Docker disponible :
           \`\`\`
-          docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+          docker pull ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}
           \`\`\`"
 
           if gh release view "$TAG" > /dev/null 2>&1; then
