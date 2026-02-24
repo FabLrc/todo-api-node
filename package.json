@@ -37,5 +37,11 @@
   "devDependencies": {
     "jest": "^29.7.0",
     "supertest": "^7.2.2"
+  },
+  "overrides": {
+    "test-exclude": "^8.0.0",
+    "swagger-jsdoc": {
+      "glob": "^11.0.0"
+    }
   }
 }
