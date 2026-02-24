@@ -5,12 +5,24 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "jest --forceExit"
+    "test": "jest --forceExit --coverage"
   },
   "jest": {
     "testEnvironment": "node",
     "setupFiles": [
       "./jest.setup.js"
+    "coverageThreshold": {
+      "global": {
+        "lines": 70,
+        "functions": 70,
+        "branches": 70,
+        "statements": 70
+      }
+    },
+    "collectCoverageFrom": [
+      "app.js",
+      "routes/**/*.js",
+      "database/**/*.js"
     ]
   },
   "dependencies": {

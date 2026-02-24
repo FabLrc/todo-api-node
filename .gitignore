@@ -1,6 +1,8 @@
 node_modules/
 .idea/
 .vscode/
+.venv/
 
 todo.db
 .env
+coverage/
