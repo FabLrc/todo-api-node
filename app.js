@@ -15,10 +15,7 @@ app.get("/", (_req, res) => {
   res.json({ message: "Welcome to the Enhanced Express Todo App!" });
 });
 
-// debug endpoint
-app.get("/debug", (_req, res) => {
-  res.json({ secret: SECRET_KEY, api_key: API_KEY, env: process.env });
-});
+const SERVER_URL = process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`;
 
 const options = {
   definition: {
@@ -30,7 +27,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: SERVER_URL,
       },
     ],
     components: {
@@ -45,13 +42,19 @@ const options = {
           },
         },
       },
-},
+    },
   },
   apis: ["./routes/*.js"],
 };
 
 const specs = swaggerJsdoc(options);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+
+// Expose the spec as JSON (required for swagger-ui-express v5 behind a reverse proxy)
+app.get("/api-docs/swagger.json", (_req, res) => res.json(specs));
+app.use("/api-docs", swaggerUi.serve);
+app.get("/api-docs", swaggerUi.setup(null, {
+  swaggerOptions: { url: "/api-docs/swagger.json" },
+}));
 
 app.use("/todos", todoRouter);
 

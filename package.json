@@ -5,10 +5,25 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "jest --forceExit"
+    "test": "jest --forceExit --coverage"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "setupFiles": [
+      "./jest.setup.js"],
+    "coverageThreshold": {
+      "global": {
+        "lines": 70,
+        "functions": 70,
+        "branches": 70,
+        "statements": 70
+      }
+    },
+    "collectCoverageFrom": [
+      "app.js",
+      "routes/**/*.js",
+      "database/**/*.js"
+    ]
   },
   "dependencies": {
     "dotenv": "^17.3.1",
@@ -17,10 +32,19 @@
     "moment": "2.29.4",
     "sql.js": "^1.6.0",
     "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-dist": "^5.31.2",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "globals": "^17.3.0",
     "jest": "^30.2.0",
     "supertest": "^7.2.2"
+  },
+  "overrides": {
+    "glob": "^11.0.0",
+    "minimatch": "^10.2.1",
+    "test-exclude": "^8.0.0"
   }
 }
