@@ -6,6 +6,7 @@ const fs = require("fs");
 process.env.NODE_ENV = "test";
 
 const app = require("../app");
+const database = require("../database/database");
 
 // Clean up the DB file after all tests
 afterAll(() => {
@@ -261,5 +262,110 @@ describe("GET /todos/search/all", () => {
     const res = await request(app).get("/todos/search/all?q=xyznonexistent123");
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual([]);
+  });
+});
+
+// ──────────────────────────────────────────────
+// Global error handler (app.js)
+// ──────────────────────────────────────────────
+describe("Global error handler", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("should return 500 when a route throws an unexpected error", async () => {
+    jest.spyOn(database, "getDb").mockRejectedValue(new Error("DB connection failed"));
+
+    const res = await request(app).get("/todos");
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty("detail");
+    expect(res.body.detail).toBe("DB connection failed");
+  });
+
+  it("should return custom status when error has status property", async () => {
+    const err = new Error("Service unavailable");
+    err.status = 503;
+    jest.spyOn(database, "getDb").mockRejectedValue(err);
+
+    const res = await request(app).get("/todos");
+    expect(res.statusCode).toBe(503);
+    expect(res.body.detail).toBe("Service unavailable");
+  });
+});
+
+// ──────────────────────────────────────────────
+// Error handling in each route (catch blocks)
+// ──────────────────────────────────────────────
+describe("Route error handling (catch blocks)", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("POST /todos should handle errors", async () => {
+    jest.spyOn(database, "getDb").mockRejectedValue(new Error("Simulated failure"));
+    const res = await request(app).post("/todos").send({ title: "fail" });
+    expect(res.statusCode).toBe(500);
+    expect(res.body.detail).toBe("Simulated failure");
+  });
+
+  it("GET /todos/:id should handle errors", async () => {
+    jest.spyOn(database, "getDb").mockRejectedValue(new Error("Simulated failure"));
+    const res = await request(app).get("/todos/1");
+    expect(res.statusCode).toBe(500);
+    expect(res.body.detail).toBe("Simulated failure");
+  });
+
+  it("PUT /todos/:id should handle errors", async () => {
+    jest.spyOn(database, "getDb").mockRejectedValue(new Error("Simulated failure"));
+    const res = await request(app).put("/todos/1").send({ title: "fail" });
+    expect(res.statusCode).toBe(500);
+    expect(res.body.detail).toBe("Simulated failure");
+  });
+
+  it("DELETE /todos/:id should handle errors", async () => {
+    jest.spyOn(database, "getDb").mockRejectedValue(new Error("Simulated failure"));
+    const res = await request(app).delete("/todos/1");
+    expect(res.statusCode).toBe(500);
+    expect(res.body.detail).toBe("Simulated failure");
+  });
+
+  it("GET /todos/search/all should handle errors", async () => {
+    jest.spyOn(database, "getDb").mockRejectedValue(new Error("Simulated failure"));
+    const res = await request(app).get("/todos/search/all?q=test");
+    expect(res.statusCode).toBe(500);
+    expect(res.body.detail).toBe("Simulated failure");
+  });
+});
+
+// ──────────────────────────────────────────────
+// Database: existing DB file branch
+// ──────────────────────────────────────────────
+describe("Database – load from existing file", () => {
+  it("should load an existing database file", async () => {
+    const db = await database.getDb();
+    db.run("INSERT INTO todos (title, status) VALUES (?, ?)", ["persist-test", "pending"]);
+    database.saveDb();
+
+    const dbPath = path.join(__dirname, "..", "todo.db");
+    expect(fs.existsSync(dbPath)).toBe(true);
+
+    // Reset the cached db so getDb re-reads from the file
+    database.resetDb();
+    const freshDb = await database.getDb();
+
+    const results = freshDb.exec("SELECT * FROM todos WHERE title = 'persist-test'");
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].values[0].includes("persist-test")).toBe(true);
+
+    // Clean up
+    if (fs.existsSync(dbPath)) {
+      fs.unlinkSync(dbPath);
+    }
+  });
+
+  it("saveDb should do nothing when db is null", () => {
+    database.resetDb();
+    // Should not throw
+    expect(() => database.saveDb()).not.toThrow();
   });
 });
