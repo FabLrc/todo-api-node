@@ -28,14 +28,17 @@
     "collectCoverageFrom": [
       "app.js",
       "routes/**/*.js",
-      "database/**/*.js"
+      "database/**/*.js",
+      "utils/**/*.js"
     ]
   },
   "dependencies": {
     "dotenv": "^17.3.1",
     "express": "^4.17.1",
+    "helmet": "^8.1.0",
     "lodash": "4.17.23",
     "moment": "2.29.4",
+    "morgan": "^1.10.1",
     "sql.js": "^1.6.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-dist": "^5.31.2",
