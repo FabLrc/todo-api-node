@@ -34,4 +34,9 @@ function saveDb() {
   }
 }
 
-module.exports = { getDb, saveDb };
+/** Reset the cached db instance (used in tests to exercise the file-loading path). */
+function resetDb() {
+  db = null;
+}
+
+module.exports = { getDb, saveDb, resetDb };

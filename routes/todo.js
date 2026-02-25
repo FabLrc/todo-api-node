@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { getDb, saveDb } = require("../database/database");
+const database = require("../database/database");
 const { toObj, toArray } = require("../utils/helpers");
 
 const router = Router();
@@ -76,11 +76,11 @@ router.post("/", async (req, res, next) => {
     if (!title) {
       return res.status(422).json({ detail: "title is required" });
     }
-    const db = await getDb();
+    const db = await database.getDb();
     db.run("INSERT INTO todos (title, description, status) VALUES (?, ?, ?)", [title, description, status]);
     const id = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
     const row = db.exec("SELECT * FROM todos WHERE id = ?", [id]);
-    saveDb();
+    database.saveDb();
     const todo = toObj(row);
     res.status(201).json(todo);
   } catch (err) {
@@ -119,7 +119,7 @@ router.get("/", async (req, res, next) => {
   try {
     const skip = Number.parseInt(req.query.skip) || 0;
     const limit = Number.parseInt(req.query.limit) || 10;
-    const db = await getDb();
+    const db = await database.getDb();
     const rows = db.exec("SELECT * FROM todos LIMIT ? OFFSET ?", [limit, skip]);
     const todos = toArray(rows);
     res.json(todos);
@@ -160,7 +160,7 @@ router.get("/", async (req, res, next) => {
 // GET /todos/:id
 router.get("/:id", async (req, res, next) => {
   try {
-    const db = await getDb();
+    const db = await database.getDb();
     const rows = db.exec("SELECT * FROM todos WHERE id = ?", [req.params.id]);
     if (!rows.length || !rows[0].values.length) return res.status(404).json({ detail: "Todo not found" });
     res.json(toObj(rows));
@@ -214,7 +214,7 @@ router.get("/:id", async (req, res, next) => {
 // PUT /todos/:id
 router.put("/:id", async (req, res, next) => {
   try {
-    const db = await getDb();
+    const db = await database.getDb();
     const existing = db.exec("SELECT * FROM todos WHERE id = ?", [req.params.id]);
     if (!existing.length || !existing[0].values.length) return res.status(404).json({ detail: "Todo not found" });
 
@@ -225,7 +225,7 @@ router.put("/:id", async (req, res, next) => {
 
     db.run("UPDATE todos SET title = ?, description = ?, status = ? WHERE id = ?", [title, description, status, req.params.id]);
     const rows = db.exec("SELECT * FROM todos WHERE id = ?", [req.params.id]);
-    saveDb();
+    database.saveDb();
     res.json(toObj(rows));
   } catch (err) {
     next(err);
@@ -268,11 +268,11 @@ router.put("/:id", async (req, res, next) => {
 // DELETE /todos/:id
 router.delete("/:id", async (req, res, next) => {
   try {
-    const db = await getDb();
+    const db = await database.getDb();
     const existing = db.exec("SELECT * FROM todos WHERE id = ?", [req.params.id]);
     if (!existing.length || !existing[0].values.length) return res.status(404).json({ detail: "Todo not found" });
     db.run("DELETE FROM todos WHERE id = ?", [req.params.id]);
-    saveDb();
+    database.saveDb();
     res.json({ detail: "Todo deleted" });
   } catch (err) {
     next(err);
@@ -304,7 +304,7 @@ router.delete("/:id", async (req, res, next) => {
 router.get("/search/all", async (req, res, next) => {
   try {
     const query = req.query.q || "";
-    const db = await getDb();
+    const db = await database.getDb();
     const results = db.exec("SELECT * FROM todos WHERE title LIKE ?", [`%${query}%`]);
     res.json(toArray(results));
   } catch (err) {
