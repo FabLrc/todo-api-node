@@ -57,6 +57,15 @@ jobs:
       # Exécuté uniquement sur main, develop et les PRs ciblant
       # ces branches.
       # ────────────────────────────────────────────────────────
+      - name: Run performance tests
+        run: npm run test:perf
+        env:
+          NODE_ENV: test
+
+      # ── Docker build (validation) ───────────────────────────
+      - name: Build Docker image
+        run: docker build -t todo-api-node:ci .
+
       - name: SonarCloud Scan
         if: |
           github.ref == 'refs/heads/main'
