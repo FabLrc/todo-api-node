@@ -1,9 +1,10 @@
+[![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=FabLrc_todo-api-node)
+
 # 📝 Todo API
 
 API REST pour gérer des tâches (todos) construite avec **Express.js** et **SQLite**.
 
 ## 🚀 Prérequis
-
 - Node.js >= 18
 - npm >= 8
 
