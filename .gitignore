@@ -3,6 +3,9 @@ node_modules/
 .vscode/
 .venv/
 
+# Dossier généré par npm overrides (shim local de test-exclude)
+package/
+
 todo.db
 .env
 coverage/
