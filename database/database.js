@@ -1,6 +1,6 @@
 const initSqlJs = require("sql.js");
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 require("dotenv").config();
 
 const DB_PATH = path.join(__dirname, "..", "todo.db");

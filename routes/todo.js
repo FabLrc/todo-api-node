@@ -111,8 +111,8 @@ router.post("/", async (req, res) => {
  */
 // GET /todos
 router.get("/", async (req, res) => {
-  const skip = parseInt(req.query.skip) || 0;
-  const limit = parseInt(req.query.limit) || 10;
+  const skip = Number.parseInt(req.query.skip) || 0;
+  const limit = Number.parseInt(req.query.limit) || 10;
   const db = await getDb();
   const rows = db.exec("SELECT * FROM todos LIMIT ? OFFSET ?", [limit, skip]);
   const todos = toArray(rows);
