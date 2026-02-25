@@ -34,6 +34,26 @@ describe("GET /api-docs", () => {
     const res = await request(app).get("/api-docs");
     expect([200, 301, 302]).toContain(res.statusCode);
   });
+
+  it("should return the swagger spec as JSON", async () => {
+    const res = await request(app).get("/api-docs/swagger.json");
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty("openapi");
+    expect(res.body.info.title).toBe("Enhanced Express Todo API");
+  });
+});
+
+// ──────────────────────────────────────────────
+// GET /health
+// ──────────────────────────────────────────────
+describe("GET /health", () => {
+  it("should return 200 with status ok", async () => {
+    const res = await request(app).get("/health");
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("ok");
+    expect(res.body).toHaveProperty("uptime");
+    expect(typeof res.body.uptime).toBe("number");
+  });
 });
 
 // ──────────────────────────────────────────────
