@@ -1,4 +1,8 @@
+[![CI/CD Pipeline](https://github.com/FabLrc/todo-api-node/actions/workflows/ci-cd.yml/badge.svg?branch=main)](https://github.com/FabLrc/todo-api-node/actions/workflows/ci-cd.yml)
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=FabLrc_todo-api-node)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_todo-api-node&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=FabLrc_todo-api-node)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_todo-api-node&metric=coverage)](https://sonarcloud.io/summary/new_code?id=FabLrc_todo-api-node)
+[![Docker Image](https://img.shields.io/badge/Docker-ghcr.io-blue?logo=docker)](https://github.com/FabLrc/todo-api-node/pkgs/container/todo-api-node)
 
 # 📝 Todo API
 
