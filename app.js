@@ -1,10 +1,18 @@
 const express = require("express");
+const helmet = require("helmet");
+const morgan = require("morgan");
 const todoRouter = require("./routes/todo");
 
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
 const app = express();
+
+// Security & logging middleware
+app.use(helmet());
+if (process.env.NODE_ENV !== "test") {
+  app.use(morgan("combined"));
+}
 app.use(express.json());
 
 app.get("/", (_req, res) => {
@@ -76,6 +84,13 @@ app.use("/todos", todoRouter);
  */
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
+});
+
+// Global error handler – must be declared after all routes
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  const status = err.status || 500;
+  res.status(status).json({ detail: err.message || "Internal server error" });
 });
 
 const PORT = process.env.PORT || 3000;
