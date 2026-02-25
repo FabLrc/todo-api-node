@@ -1,12 +1,3 @@
-
-#
-# Pour bloquer les merges vers main / develop tant que le workflow
-# n'est pas terminé, activez dans Settings > Branches > Branch
-# protection rules :
-#   ✅ Require status checks to pass before merging
-#   ✅ Cochez « Quality Checks » dans la liste des checks requis
-# ──────────────────────────────────────────────────────────────
-
 name: CI/CD Pipeline
 
 on:
@@ -64,14 +55,7 @@ jobs:
 
       # ── SonarCloud ──────────────────────────────────────────
       # Exécuté uniquement sur main, develop et les PRs ciblant
-      # ces branches. Les feature branches n'en ont pas besoin.
-      #
-      # Pré‑requis :
-      #   1. Créez le projet sur https://sonarcloud.io
-      #   2. Ajoutez le secret SONAR_TOKEN dans GitHub
-      #      (Settings > Secrets and variables > Actions)
-      #   3. Remplacez les valeurs <VOTRE_ORG> et <VOTRE_PROJECT>
-      #      ci-dessous par celles de votre projet SonarCloud.
+      # ces branches.
       # ────────────────────────────────────────────────────────
       - name: SonarCloud Scan
         if: |
@@ -102,8 +86,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write   # pour créer le tag + la release
-      packages: write   # pour push vers ghcr.io
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout code
