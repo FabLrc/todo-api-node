@@ -57,6 +57,10 @@ jobs:
       # Exécuté uniquement sur main, develop et les PRs ciblant
       # ces branches.
       # ────────────────────────────────────────────────────────
+      # ── Docker build (validation) ───────────────────────────
+      - name: Build Docker image
+        run: docker build -t todo-api-node:ci .
+
       - name: SonarCloud Scan
         if: |
           github.ref == 'refs/heads/main'
