@@ -5,7 +5,6 @@
 API REST pour gérer des tâches (todos) construite avec **Express.js** et **SQLite**.
 
 ## 🚀 Prérequis
-
 - Node.js >= 18
 - npm >= 8
 
