@@ -17,203 +17,42 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# ──────────────────────────────────────────────────────────────
-# JOB 1 – Quality Checks (tests, lint, audit, sonar)
-# Déclenché sur TOUTES les branches + PRs vers main / develop
-# ──────────────────────────────────────────────────────────────
 jobs:
+  # ──────────────────────────────────────────────────────────────
+  # JOB 1 – Quality Checks (tests, lint, audit, sonar)
+  # Appelle le workflow réutilisable quality.yml
+  # ──────────────────────────────────────────────────────────────
   quality:
-    name: Quality Checks (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ["18", "20", "22"]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          # fetch-depth: 0 requis pour SonarCloud (analyse de blame / PR diff)
-          fetch-depth: 0
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: Run ESLint
-        run: npx eslint .
-
-      - name: Security audit (npm audit)
-        run: npm audit --audit-level=moderate
-
-      - name: Run tests with coverage
-        run: npm test
-        env:
-          NODE_ENV: test
-
-      # ── SonarCloud ──────────────────────────────────────────
-      # Exécuté uniquement sur main, develop et les PRs ciblant
-      # ces branches.
-      # ────────────────────────────────────────────────────────
-      - name: Run performance tests
-        run: npm run test:perf
-        env:
-          NODE_ENV: test
-
-      # ── Docker build (validation) — une seule fois sur Node 20 ──
-      - name: Build Docker image
-        if: matrix.node-version == '20'
-        run: docker build -t todo-api-node:ci .
-
-      - name: SonarCloud Scan
-        if: |
-          matrix.node-version == '20'
-          && (github.ref == 'refs/heads/main'
-          || github.ref == 'refs/heads/develop'
-          || github.event_name == 'pull_request')
-        uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=${{ vars.SONAR_ORG }}
-            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
-            -Dsonar.sources=app.js,routes,database
-            -Dsonar.exclusions=coverage/**,node_modules/**,package/**
-            -Dsonar.tests=tests
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+    uses: ./.github/workflows/quality.yml
+    with:
+      node-versions: '["18", "20", "22"]'
+    secrets: inherit
 
   # ──────────────────────────────────────────────────────────────
   # JOB 2 – Release (Docker build/push + GitHub Release)
   # Déclenché UNIQUEMENT sur les branches release/x.y.z
-  # Nécessite que le job quality soit passé au vert.
+  # Appelle le workflow réutilisable release.yml
   # ──────────────────────────────────────────────────────────────
   release:
-    name: Release – Docker & GitHub Release
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
     needs: quality
-    runs-on: ubuntu-latest
-
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
     permissions:
       contents: write
       packages: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Extract version from branch name
-        id: version
-        run: |
-          BRANCH="${{ github.ref_name }}"
-          VERSION="${BRANCH#release/}"
-          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "VERSION=$VERSION"       >> "$GITHUB_OUTPUT"
-          echo "REPO_LOWER=$REPO_LOWER" >> "$GITHUB_OUTPUT"
-          echo "🏷️  Version détectée : $VERSION"
-
-      - name: Log into GitHub Container Registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
-        with:
-          context: .
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
-            ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}
-            ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:latest
-
-      - name: Create or update Git tag
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -f "v${{ steps.version.outputs.VERSION }}"
-          git push origin "v${{ steps.version.outputs.VERSION }}" --force
-
-      - name: Create or update GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="v${{ steps.version.outputs.VERSION }}"
-          IMAGE="ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}"
-
-          NOTES="## Release ${TAG}
-
-          **Image Docker :**
-          \`\`\`
-          docker pull ${IMAGE}
-          \`\`\`
-
-          **Déployé automatiquement sur Vercel.**"
-
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            gh release edit "$TAG" \
-              --title "Release $TAG" \
-              --notes "$NOTES" \
-              --latest
-          else
-            gh release create "$TAG" \
-              --title "Release $TAG" \
-              --notes "$NOTES" \
-              --latest
-          fi
 
   # ──────────────────────────────────────────────────────────────
   # JOB 3 – Discord Notification
   # Déclenché après quality (et release si applicable).
   # S'exécute TOUJOURS (succès, échec ou annulation).
-  # Nécessite le secret DISCORD_WEBHOOK_URL dans les settings.
+  # Appelle le workflow réutilisable notify.yml
   # ──────────────────────────────────────────────────────────────
   notify:
-    name: Discord Notification
     needs: [quality, release]
     if: always() && needs.quality.result != 'skipped'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Compute status & color
-        id: vars
-        run: |
-          QUALITY="${{ needs.quality.result }}"
-          RELEASE="${{ needs.release.result }}"
-
-          if   [ "$QUALITY" = "cancelled" ] || [ "$RELEASE" = "cancelled" ]; then
-            echo "STATUS=⚠️  Pipeline annulé"  >> "$GITHUB_OUTPUT"
-            echo "COLOR=16776960"               >> "$GITHUB_OUTPUT"  # jaune
-          elif [ "$QUALITY" = "success" ] && ( [ "$RELEASE" = "success" ] || [ "$RELEASE" = "skipped" ] ); then
-            echo "STATUS=✅ Pipeline réussi"   >> "$GITHUB_OUTPUT"
-            echo "COLOR=3066993"               >> "$GITHUB_OUTPUT"  # vert
-          else
-            echo "STATUS=❌ Pipeline en échec" >> "$GITHUB_OUTPUT"
-            echo "COLOR=15158332"              >> "$GITHUB_OUTPUT"  # rouge
-          fi
-
-      - name: Send Discord notification
-        uses: tsickert/discord-webhook@v6.0.0
-        with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-color: ${{ steps.vars.outputs.COLOR }}
-          embed-title: "${{ steps.vars.outputs.STATUS }} — ${{ github.repository }}"
-          embed-description: |
-            **Branch :** `${{ github.ref_name }}`
-            **Déclenché par :** `${{ github.actor }}`
-            **Quality :** `${{ needs.quality.result }}`
-            **Release :** `${{ needs.release.result }}`
-            **Commit :** [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
-            ➡️ **[Voir le run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+    uses: ./.github/workflows/notify.yml
+    with:
+      quality-result: ${{ needs.quality.result }}
+      release-result: ${{ needs.release.result }}
+    secrets: inherit
