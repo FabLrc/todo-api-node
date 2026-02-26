@@ -3,6 +3,8 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_todo-api-node&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=FabLrc_todo-api-node)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=FabLrc_todo-api-node&metric=coverage)](https://sonarcloud.io/summary/new_code?id=FabLrc_todo-api-node)
 [![Docker Image](https://img.shields.io/badge/Docker-ghcr.io-blue?logo=docker)](https://github.com/FabLrc/todo-api-node/pkgs/container/todo-api-node)
+[![Uptime (30j)](https://img.shields.io/uptimerobot/ratio/m802435105-e0dea48a35805fed110c2301?label=uptime%2030j&logo=uptimerobot)](https://stats.uptimerobot.com/02n8bNhz0g)
+[![Status](https://img.shields.io/uptimerobot/status/m802435105-e0dea48a35805fed110c2301?label=status&logo=uptimerobot)](https://stats.uptimerobot.com/02n8bNhz0g)
 
 # 📝 Todo API
 
@@ -23,6 +25,8 @@ API REST pour gérer des tâches (todos) construite avec **Express.js** et **SQL
 - [Structure du projet](#-structure-du-projet)
 - [Docker](#-docker)
 - [Sécurité](#-sécurité)
+- [CI/CD — Secrets GitHub](#%EF%B8%8F-cicd--secrets-github)
+- [Monitoring externe (UptimeRobot)](#-monitoring-externe-uptimerobot)
 - [Démo](#-démo)
 
 ## 🚀 Prérequis
@@ -249,6 +253,19 @@ docker run -p 3000:3000 --env-file .env todo-api-node
 - **Error handler** : Middleware global de gestion d'erreurs (aucune stack trace exposée en production)
 - Les dépendances sont auditées automatiquement en CI via `npm audit`
 - Les mises à jour de dépendances sont gérées automatiquement via Dependabot
+
+## ⚙️ CI/CD — Secrets GitHub
+
+Les secrets suivants doivent être configurés dans **Settings → Secrets and variables → Actions** du dépôt GitHub :
+
+| Secret | Description | Obligatoire |
+|--------|-------------|-------------|
+| `SONAR_TOKEN` | Token d'authentification SonarCloud | Oui |
+| `DISCORD_WEBHOOK_URL` | URL du webhook Discord pour les notifications CI | Oui (notifications) |
+
+## 📡 Monitoring externe (UptimeRobot)
+
+L'API est surveillée en continu via **UptimeRobot** (plan gratuit, vérification toutes les 5 minutes).
 
 ## 🌐 Démo
 
