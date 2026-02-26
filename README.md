@@ -23,6 +23,7 @@ API REST pour gérer des tâches (todos) construite avec **Express.js** et **SQL
 - [Structure du projet](#-structure-du-projet)
 - [Docker](#-docker)
 - [Sécurité](#-sécurité)
+- [CI/CD — Secrets GitHub](#%EF%B8%8F-cicd--secrets-github)
 - [Démo](#-démo)
 
 ## 🚀 Prérequis
@@ -249,6 +250,15 @@ docker run -p 3000:3000 --env-file .env todo-api-node
 - **Error handler** : Middleware global de gestion d'erreurs (aucune stack trace exposée en production)
 - Les dépendances sont auditées automatiquement en CI via `npm audit`
 - Les mises à jour de dépendances sont gérées automatiquement via Dependabot
+
+## ⚙️ CI/CD — Secrets GitHub
+
+Les secrets suivants doivent être configurés dans **Settings → Secrets and variables → Actions** du dépôt GitHub :
+
+| Secret | Description | Obligatoire |
+|--------|-------------|-------------|
+| `SONAR_TOKEN` | Token d'authentification SonarCloud | Oui |
+| `DISCORD_WEBHOOK_URL` | URL du webhook Discord pour les notifications CI | Oui (notifications) |
 
 ## 🌐 Démo
 
