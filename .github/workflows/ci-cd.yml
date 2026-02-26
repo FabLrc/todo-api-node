@@ -167,3 +167,47 @@ jobs:
               --notes "$NOTES" \
               --latest
           fi
+
+  # ──────────────────────────────────────────────────────────────
+  # JOB 3 – Discord Notification
+  # Déclenché après quality (et release si applicable).
+  # S'exécute TOUJOURS (succès, échec ou annulation).
+  # Nécessite le secret DISCORD_WEBHOOK_URL dans les settings.
+  # ──────────────────────────────────────────────────────────────
+  notify:
+    name: Discord Notification
+    needs: [quality, release]
+    if: always() && needs.quality.result != 'skipped'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Compute status & color
+        id: vars
+        run: |
+          QUALITY="${{ needs.quality.result }}"
+          RELEASE="${{ needs.release.result }}"
+
+          if   [ "$QUALITY" = "cancelled" ] || [ "$RELEASE" = "cancelled" ]; then
+            echo "STATUS=⚠️  Pipeline annulé"  >> "$GITHUB_OUTPUT"
+            echo "COLOR=16776960"               >> "$GITHUB_OUTPUT"  # jaune
+          elif [ "$QUALITY" = "success" ] && ( [ "$RELEASE" = "success" ] || [ "$RELEASE" = "skipped" ] ); then
+            echo "STATUS=✅ Pipeline réussi"   >> "$GITHUB_OUTPUT"
+            echo "COLOR=3066993"               >> "$GITHUB_OUTPUT"  # vert
+          else
+            echo "STATUS=❌ Pipeline en échec" >> "$GITHUB_OUTPUT"
+            echo "COLOR=15158332"              >> "$GITHUB_OUTPUT"  # rouge
+          fi
+
+      - name: Send Discord notification
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-color: ${{ steps.vars.outputs.COLOR }}
+          embed-title: "${{ steps.vars.outputs.STATUS }} — ${{ github.repository }}"
+          embed-description: |
+            **Branch :** `${{ github.ref_name }}`
+            **Déclenché par :** `${{ github.actor }}`
+            **Quality :** `${{ needs.quality.result }}`
+            **Release :** `${{ needs.release.result }}`
+            **Commit :** [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+            ➡️ **[Voir le run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
