@@ -36,6 +36,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
+      - name: Save previous version as tag 'previous'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO_LOWER="${{ steps.version.outputs.REPO_LOWER }}"
+          # Récupère la version currently taggée :latest (= version précédente)
+          PREV=$(gh release list --limit 5 --json tagName,isLatest \
+            | jq -r '[.[] | select(.isLatest == true)] | .[0].tagName // empty' \
+            | sed 's/^v//') || true
+          if [ -n "$PREV" ]; then
+            docker pull "ghcr.io/${REPO_LOWER}:${PREV}" 2>/dev/null || true
+            docker tag  "ghcr.io/${REPO_LOWER}:${PREV}" \
+                        "ghcr.io/${REPO_LOWER}:previous" 2>/dev/null || true
+            docker push "ghcr.io/${REPO_LOWER}:previous" 2>/dev/null || true
+            echo "✅ Tag :previous sauvegardé → $PREV"
+          else
+            echo "⚠️  Aucune version précédente trouvée, étape ignorée"
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
         with:
@@ -81,3 +100,36 @@ jobs:
               --notes "$NOTES" \
               --latest
           fi
+
+      # ── Validation Docker (pré-deploy) ───────────────────────
+      # Vérifie que l'image publiée démarre correctement.
+      # ────────────────────────────────────────────────────────
+      - name: Setup Node.js for smoke tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies for smoke tests
+        run: npm ci --ignore-scripts
+
+      - name: Start application container (validation pré-deploy)
+        run: |
+          docker pull ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}
+          docker run -d --name smoke-app -p 3000:3000 \
+            ghcr.io/${{ steps.version.outputs.REPO_LOWER }}:${{ steps.version.outputs.VERSION }}
+
+      - name: Wait for container to be ready
+        run: |
+          echo "En attente du démarrage du conteneur..."
+          timeout 30 bash -c 'until curl -sf http://localhost:3000/health; do sleep 1; done'
+          echo "Conteneur prêt !"
+
+      - name: Run smoke tests against Docker container
+        run: npm run test:smoke
+        env:
+          SMOKE_URL: http://localhost:3000
+
+      - name: Stop application container
+        if: always()
+        run: docker stop smoke-app && docker rm smoke-app

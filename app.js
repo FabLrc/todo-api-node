@@ -2,6 +2,7 @@ const express = require("express");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const todoRouter = require("./routes/todo");
+const database = require("./database/database");
 
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
@@ -48,7 +49,7 @@ const options = {
       },
     },
   },
-  apis: ["./routes/*.js"],
+  apis: ["./app.js", "./routes/*.js"],
 };
 
 const specs = swaggerJsdoc(options);
@@ -81,9 +82,20 @@ app.use("/todos", todoRouter);
  *                 uptime:
  *                   type: number
  *                   example: 123.456
+ *                 db:
+ *                   type: string
+ *                   example: ok
+ *       503:
+ *         description: Service unhealthy
  */
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", uptime: process.uptime() });
+app.get("/health", async (_req, res) => {
+  try {
+    const db = await database.getDb();
+    db.exec("SELECT 1");
+    res.json({ status: "ok", uptime: process.uptime(), db: "ok" });
+  } catch (err) {
+    res.status(503).json({ status: "error", uptime: process.uptime(), db: err.message });
+  }
 });
 
 // Global error handler – must be declared after all routes
