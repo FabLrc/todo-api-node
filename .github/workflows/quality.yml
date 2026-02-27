@@ -57,6 +57,11 @@ jobs:
         env:
           NODE_ENV: test
 
+      - name: Run smoke tests
+        run: npm run test:smoke
+        env:
+          NODE_ENV: test
+
       # ── Docker build (validation) — une seule fois sur Node 20 ──
       - name: Build Docker image
         if: matrix.node-version == '20'
