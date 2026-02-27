@@ -11,6 +11,17 @@ on:
     branches:
       - main
       - develop
+  # ── Déclenchement manuel (recovery / redéploiement forcé) ──────
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Raison du déclenchement manuel"
+        required: false
+        default: "Redéploiement manuel"
+      node-versions:
+        description: 'Versions Node.js à tester (JSON array)'
+        required: false
+        default: '["18", "20", "22"]'
 
 # Annule les exécutions précédentes sur la même branche / PR
 concurrency:
@@ -25,7 +36,7 @@ jobs:
   quality:
     uses: ./.github/workflows/quality.yml
     with:
-      node-versions: '["18", "20", "22"]'
+      node-versions: ${{ inputs.node-versions || '["18", "20", "22"]' }}
     secrets: inherit
 
   # ──────────────────────────────────────────────────────────────
