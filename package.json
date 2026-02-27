@@ -5,8 +5,10 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "jest --forceExit --coverage --testPathIgnorePatterns=performance",
+    "test": "jest --forceExit --coverage --testPathIgnorePatterns=performance --testPathIgnorePatterns=smoke",
     "test:perf": "jest --forceExit tests/performance.test.js",
+    "test:contract": "jest --forceExit tests/contract.test.js",
+    "test:smoke": "jest --forceExit tests/smoke.test.js",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major",
@@ -45,6 +47,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
     "@eslint/js": "^10.0.1",
