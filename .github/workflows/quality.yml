@@ -47,6 +47,11 @@ jobs:
         env:
           NODE_ENV: test
 
+      - name: API Contract Validation
+        run: npm run test:contract
+        env:
+          NODE_ENV: test
+
       - name: Run performance tests
         run: npm run test:perf
         env:
