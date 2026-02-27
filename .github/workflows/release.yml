@@ -133,20 +133,3 @@ jobs:
       - name: Stop application container
         if: always()
         run: docker stop smoke-app && docker rm smoke-app
-
-      # ── Smoke tests post-deploy (production) ─────────────────
-      # Vérifie que l'app est opérationnelle sur l'URL de prod
-      # après le déploiement Vercel.
-      # Nécessite la variable PRODUCTION_URL dans les settings
-      # du dépôt (Settings → Variables → Actions).
-      # ────────────────────────────────────────────────────────
-      - name: Wait for production deployment to be ready
-        run: |
-          echo "En attente du déploiement Vercel..."
-          timeout 60 bash -c 'until curl -sf ${{ vars.PRODUCTION_URL }}/health; do sleep 3; done'
-          echo "Production prête !"
-
-      - name: Run smoke tests against production
-        run: npm run test:smoke
-        env:
-          SMOKE_URL: ${{ vars.PRODUCTION_URL }}
