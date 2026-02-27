@@ -26,6 +26,7 @@ API REST pour gérer des tâches (todos) construite avec **Express.js** et **SQL
 - [Docker](#-docker)
 - [Sécurité](#-sécurité)
 - [CI/CD — Secrets GitHub](#%EF%B8%8F-cicd--secrets-github)
+- [Rollback](#-rollback)
 - [Monitoring externe (UptimeRobot)](#-monitoring-externe-uptimerobot)
 - [Démo](#-démo)
 
@@ -263,7 +264,39 @@ Les secrets suivants doivent être configurés dans **Settings → Secrets and v
 | `SONAR_TOKEN` | Token d'authentification SonarCloud | Oui |
 | `DISCORD_WEBHOOK_URL` | URL du webhook Discord pour les notifications CI | Oui (notifications) |
 
-## 📡 Monitoring externe (UptimeRobot)
+## � Rollback
+
+En cas de problème sur une version déployée, il est possible de revenir rapidement à une version précédente grâce au workflow **Rollback** déclenché manuellement.
+
+### Stratégie
+
+1. L'image Docker de la version cible (déjà présente dans `ghcr.io`) est **re-taguée comme `latest`**
+2. Le service redéploie automatiquement l'image `latest`
+
+### Procédure
+
+1. Aller sur **Actions** → **🔙 Rollback** dans le dépôt GitHub
+2. Cliquer sur **"Run workflow"**
+3. Saisir la **version cible** (ex : `1.2.0`) — c'est la version stable vers laquelle revenir
+4. Cliquer sur **"Run workflow"** pour lancer le rollback
+
+Le workflow va :
+- Vérifier que l'image `ghcr.io/fablrc/todo-api-node:<version>` existe
+- La re-taguer en `latest`
+- Pousser le nouveau tag `latest` sur le registre
+
+### Exemple
+
+```bash
+# Équivalent manuel (si besoin hors GitHub Actions)
+docker pull ghcr.io/fablrc/todo-api-node:1.2.0
+docker tag ghcr.io/fablrc/todo-api-node:1.2.0 ghcr.io/fablrc/todo-api-node:latest
+docker push ghcr.io/fablrc/todo-api-node:latest
+```
+
+> ℹ️ Les versions disponibles sont visibles dans l'onglet **Packages** du dépôt GitHub ou via les **GitHub Releases**.
+
+## �📡 Monitoring externe (UptimeRobot)
 
 L'API est surveillée en continu via **UptimeRobot** (plan gratuit, vérification toutes les 5 minutes).
 

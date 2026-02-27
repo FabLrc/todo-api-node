@@ -1,0 +1,64 @@
+name: 🔙 Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version cible du rollback (ex: 1.2.0)"
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    name: Rollback to v${{ inputs.version }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+
+    env:
+      IMAGE_BASE: ghcr.io/${{ github.repository }}
+
+    steps:
+      # ── Connexion au registre ──────────────────────────────
+      - name: Log into GitHub Container Registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Vérifier que l'image cible existe ──────────────────
+      - name: Verify target image exists
+        run: |
+          REPO_LOWER=$(echo "$IMAGE_BASE" | tr '[:upper:]' '[:lower:]')
+          echo "🔍 Vérification de l'image : ${REPO_LOWER}:${{ inputs.version }}"
+          docker manifest inspect "${REPO_LOWER}:${{ inputs.version }}" > /dev/null 2>&1 \
+            || { echo "❌ L'image ${REPO_LOWER}:${{ inputs.version }} n'existe pas dans le registre."; exit 1; }
+          echo "✅ Image trouvée."
+
+      # ── Re-tag de l'image cible en latest ──────────────────
+      - name: Re-tag target version as latest
+        run: |
+          REPO_LOWER=$(echo "$IMAGE_BASE" | tr '[:upper:]' '[:lower:]')
+          echo "📦 Pull de l'image ${REPO_LOWER}:${{ inputs.version }}"
+          docker pull "${REPO_LOWER}:${{ inputs.version }}"
+
+          echo "🏷️  Re-tag en latest"
+          docker tag "${REPO_LOWER}:${{ inputs.version }}" "${REPO_LOWER}:latest"
+
+          echo "🚀 Push de ${REPO_LOWER}:latest"
+          docker push "${REPO_LOWER}:latest"
+
+      # ── Résumé ─────────────────────────────────────────────
+      - name: Rollback summary
+        run: |
+          REPO_LOWER=$(echo "$IMAGE_BASE" | tr '[:upper:]' '[:lower:]')
+          echo "## ✅ Rollback effectué" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Paramètre | Valeur |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Version cible** | \`${{ inputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Image re-taguée** | \`${REPO_LOWER}:latest\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Déclenché par** | \`${{ github.actor }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Date** | \`$(date -u +'%Y-%m-%d %H:%M:%S UTC')\` |" >> "$GITHUB_STEP_SUMMARY"
