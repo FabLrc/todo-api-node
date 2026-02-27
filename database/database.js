@@ -3,7 +3,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 require("dotenv").config();
 
-const DB_PATH = path.join(__dirname, "..", "todo.db");
+// Sur Vercel (serverless), le filesystem est read-only partout sauf /tmp
+const DB_PATH = process.env.DB_PATH ||
+  (process.env.VERCEL ? "/tmp/todo.db" : path.join(__dirname, "..", "todo.db"));
 
 let db;
 
